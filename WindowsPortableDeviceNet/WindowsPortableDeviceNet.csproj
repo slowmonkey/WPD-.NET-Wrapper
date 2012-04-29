@@ -46,7 +46,6 @@
     <Compile Include="Model\Item.cs" />
     <Compile Include="Model\Properties\BaseWPDProperties.cs" />
     <Compile Include="Model\Properties\ContentTypeProperty.cs" />
-    <Compile Include="Model\Properties\FileDataProperty.cs" />
     <Compile Include="Model\Properties\OriginalFileNameProperty.cs" />
     <Compile Include="Model\Properties\Device\TypeProperty.cs" />
     <Compile Include="Model\Properties\Device\FirmwareVersionProperty.cs" />

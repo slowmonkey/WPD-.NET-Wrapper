@@ -8,13 +8,45 @@ namespace WindowsPortableDeviceNet.Model
             Unknown = 0,
             FunctionalObject,
             Folder,
-            Image
+            Image,
+            Document,
+            Contact,
+            ContactGroup,
+            Audio,
+            Video,
+            Television,
+            Playlist,
+            MixedContentAlbum,
+            AudioAlbum,
+            ImageAlbum,
+            VideoAlbum,
+            Memo,
+            Email,
+            Appointment,
+            Task,
+            Program,
+            GenericFile,
+            Calendar,
+            GenericMessage,
+            NetworkAssociation,
+            Certificate,
+            WirelessProfile,
+            MediaCast,
+            Section,
+            Unspecified,
+            All
         };
 
         public enum DeviceType
         {
             Unknown = 0,
-            Camera
+            Generic,
+            Camera,
+            MediaPlayer,
+            Phone,
+            Video,
+            PersonalInformationManager,
+            AudioRecorder
         };
     }
 }

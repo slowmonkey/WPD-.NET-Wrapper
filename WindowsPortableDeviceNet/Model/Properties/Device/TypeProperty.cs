@@ -8,7 +8,18 @@ namespace WindowsPortableDeviceNet.Model.Properties.Device
     /// </summary>
     public class TypeProperty : BaseWPDProperties
     {
-        private const uint WPD_DEVICE_TYPE_CAMERA = 1;
+        // These uint values are obtained from the Windows Driver Kit Tools - WpdInfo.Values file.
+
+        private enum WpdDeviceType
+        {
+            Generic = 0,
+            Camera = 1,
+            MediaPlayer = 2,
+            Phone = 3,
+            Video = 4,
+            PersonalInformationManager = 5,
+            AudioRecorder = 6,
+        };
 
         public WindowsPortableDeviceEnumerators.DeviceType Type { get; private set; }
         public uint Value { get; private set; }
@@ -26,11 +37,47 @@ namespace WindowsPortableDeviceNet.Model.Properties.Device
 
         private void ExtrapolateDeviceType(uint deviceType)
         {
-            switch (deviceType)
+            switch ((WpdDeviceType)deviceType)
             {
-                case WPD_DEVICE_TYPE_CAMERA:
+                case WpdDeviceType.Generic:
+                {
+                    Type = WindowsPortableDeviceEnumerators.DeviceType.Generic;
+                }
+                break;
+
+                case WpdDeviceType.Camera:
                 {
                     Type = WindowsPortableDeviceEnumerators.DeviceType.Camera;
+                }
+                break;
+
+                case WpdDeviceType.MediaPlayer:
+                {
+                    Type = WindowsPortableDeviceEnumerators.DeviceType.MediaPlayer;
+                }
+                break;
+
+                case WpdDeviceType.Phone:
+                {
+                    Type = WindowsPortableDeviceEnumerators.DeviceType.Phone;
+                }
+                break;
+
+                case WpdDeviceType.Video:
+                {
+                    Type = WindowsPortableDeviceEnumerators.DeviceType.Video;
+                }
+                break;
+
+                case WpdDeviceType.PersonalInformationManager:
+                {
+                    Type = WindowsPortableDeviceEnumerators.DeviceType.PersonalInformationManager;
+                }
+                break;
+
+                case WpdDeviceType.AudioRecorder:
+                {
+                    Type = WindowsPortableDeviceEnumerators.DeviceType.AudioRecorder;
                 }
                 break;
 
