@@ -48,8 +48,6 @@ namespace WindowsPortableDeviceNet.Model.Properties
 
         public WindowsPortableDeviceEnumerators.ContentType Type { get; private set; }
         public string Value { get; private set; }
-        public Guid FormatId { get; private set; }
-        public uint PositionId { get; private set; }
 
         public ContentTypeProperty(IPortableDeviceValues deviceProperties)
             : base(deviceProperties)

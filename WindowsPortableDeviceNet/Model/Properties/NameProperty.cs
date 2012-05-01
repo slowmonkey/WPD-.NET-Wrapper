@@ -6,8 +6,6 @@ namespace WindowsPortableDeviceNet.Model.Properties
     public class NameProperty : BaseWPDProperties
     {
         public string Value { get; private set; }
-        public Guid FormatId { get; private set; }
-        public uint PositionId { get; private set; }
 
         public NameProperty(IPortableDeviceValues deviceProperties)
             : base(deviceProperties)

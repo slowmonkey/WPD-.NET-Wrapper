@@ -6,8 +6,6 @@ namespace WindowsPortableDeviceNet.Model.Properties.Device
     public class FriendlyNameProperty : BaseWPDProperties
     {
         public string Value { get; private set; }
-        public Guid FormatId { get; private set; }
-        public uint PositionId { get; private set; }
 
         public FriendlyNameProperty(IPortableDeviceValues deviceProperties)
             : base(deviceProperties)

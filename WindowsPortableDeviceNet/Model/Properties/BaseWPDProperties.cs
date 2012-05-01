@@ -7,6 +7,9 @@ namespace WindowsPortableDeviceNet.Model.Properties
     {
         public IPortableDeviceValues DeviceProperties { get; private set; }
 
+        public Guid FormatId { get; set; }
+        public uint PositionId { get; set; }
+
         public BaseWPDProperties(IPortableDeviceValues deviceProperties)
         {
             DeviceProperties = deviceProperties;
