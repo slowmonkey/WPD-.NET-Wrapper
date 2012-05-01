@@ -6,8 +6,6 @@ namespace WindowsPortableDeviceNet.Model.Properties
     public class OriginalFileNameProperty : BaseWPDProperties
     {
         public string Value { get; private set; }
-        public Guid FormatId { get; private set; }
-        public uint PositionId { get; private set; }
 
         public OriginalFileNameProperty(IPortableDeviceValues deviceProperties)
             : base(deviceProperties)

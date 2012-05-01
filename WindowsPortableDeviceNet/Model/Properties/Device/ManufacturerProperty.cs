@@ -6,8 +6,6 @@ namespace WindowsPortableDeviceNet.Model.Properties.Device
     public class ManufacturerProperty : BaseWPDProperties
     {
         public string Value { get; private set; }
-        public Guid FormatId { get; private set; }
-        public uint PositionId { get; private set; }
 
         public ManufacturerProperty(IPortableDeviceValues deviceProperties)
             : base(deviceProperties)
