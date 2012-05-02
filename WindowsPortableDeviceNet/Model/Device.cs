@@ -85,9 +85,33 @@ namespace WindowsPortableDeviceNet.Model
         /// <param name="isKeepFolderStructure"></param>
         public void TransferData(string destinationPath, bool isKeepFolderStructure)
         {
-            foreach (Item item in DeviceItems)
+            try
             {
-                item.TransferFiles(destinationPath, isKeepFolderStructure);
+                Connect();
+                foreach (Item item in DeviceItems)
+                {
+                    item.TransferFiles(destinationPath, isKeepFolderStructure);
+                }
+            }
+            catch
+            {
+                Disconnect();
+            }
+        }
+
+        public void Refresh(string deviceId)
+        {
+            DeviceId = deviceId;
+            DeviceItems.Clear();
+
+            try
+            {
+                Connect();
+                LoadDeviceData(ComDeviceObject);
+            }
+            catch
+            {
+                Disconnect();
             }
         }
 
