@@ -33,7 +33,7 @@ namespace WindowsPortableDeviceNet.Model
 
             // Only load the sub information if the current object is a folder or functional object.
 
-            switch(ContentType.Type)
+            switch (ContentType.Type)
             {
                 case WindowsPortableDeviceEnumerators.ContentType.FunctionalObject:
                 {
@@ -58,7 +58,7 @@ namespace WindowsPortableDeviceNet.Model
 
         public void TransferFiles(string destinationPath, bool isKeepFolderStructure)
         {
-            switch(ContentType.Type)
+            switch (ContentType.Type)
             {
                 case WindowsPortableDeviceEnumerators.ContentType.Folder:
                 case WindowsPortableDeviceEnumerators.ContentType.FunctionalObject:
@@ -72,7 +72,7 @@ namespace WindowsPortableDeviceNet.Model
                         }
                     }
 
-                    foreach(Item item in DeviceItems)
+                    foreach (Item item in DeviceItems)
                     {
                         item.TransferFiles(destinationPath, isKeepFolderStructure);
                     }
@@ -98,7 +98,7 @@ namespace WindowsPortableDeviceNet.Model
             IPortableDeviceResources resources;
             DeviceContent.Transfer(out resources);
 
-            IStream wpdStream;
+            IStream wpdStream = null;
             uint optimalTransferSize = 0;
 
             var property = new _tagpropertykey
@@ -107,26 +107,40 @@ namespace WindowsPortableDeviceNet.Model
                                    pid = 0
                                };
 
-            resources.GetStream(Id, ref property, 0, ref optimalTransferSize, out wpdStream);
-
-            System.Runtime.InteropServices.ComTypes.IStream sourceStream = (System.Runtime.InteropServices.ComTypes.IStream)wpdStream;
-
-            FileStream targetStream = new FileStream(Path.Combine(destinationPath, OriginalFileName.Value), FileMode.Create, FileAccess.Write);
-
-            unsafe
+            System.Runtime.InteropServices.ComTypes.IStream sourceStream = null;
+            try
             {
-                var buffer = new byte[1024];
-                int bytesRead;
-                do
-                {
-                    sourceStream.Read(buffer, 1024, new IntPtr(&bytesRead));
-                    targetStream.Write(buffer, 0, 1024);
-                } while (bytesRead > 0);
-                targetStream.Close();
-            }
+                resources.GetStream(Id, ref property, 0, ref optimalTransferSize, out wpdStream);
+                sourceStream = (System.Runtime.InteropServices.ComTypes.IStream)wpdStream;
 
-            Marshal.ReleaseComObject(sourceStream);
-            Marshal.ReleaseComObject(wpdStream);
+                FileStream targetStream = new FileStream(
+                    Path.Combine(destinationPath, OriginalFileName.Value),
+                    FileMode.Create,
+                    FileAccess.Write);
+
+                unsafe
+                {
+                    try
+                    {
+                        var buffer = new byte[1024];
+                        int bytesRead;
+                        do
+                        {
+                            sourceStream.Read(buffer, 1024, new IntPtr(&bytesRead));
+                            targetStream.Write(buffer, 0, 1024);
+                        } while (bytesRead > 0);
+                    }
+                    finally
+                    {
+                        targetStream.Close();
+                    }
+                }
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(sourceStream);
+                Marshal.ReleaseComObject(wpdStream);
+            }
         }
     }
 }
