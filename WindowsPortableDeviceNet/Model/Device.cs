@@ -93,7 +93,7 @@ namespace WindowsPortableDeviceNet.Model
                     item.TransferFiles(destinationPath, isKeepFolderStructure);
                 }
             }
-            catch
+            finally
             {
                 Disconnect();
             }
@@ -109,7 +109,7 @@ namespace WindowsPortableDeviceNet.Model
                 Connect();
                 LoadDeviceData(ComDeviceObject);
             }
-            catch
+            finally
             {
                 Disconnect();
             }
