@@ -127,7 +127,7 @@ namespace WindowsPortableDeviceNet.Model
                         do
                         {
                             sourceStream.Read(buffer, 1024, new IntPtr(&bytesRead));
-                            targetStream.Write(buffer, 0, 1024);
+                            targetStream.Write(buffer, 0, bytesRead);
                         } while (bytesRead > 0);
                     }
                     finally
@@ -140,6 +140,122 @@ namespace WindowsPortableDeviceNet.Model
             {
                 Marshal.ReleaseComObject(sourceStream);
                 Marshal.ReleaseComObject(wpdStream);
+            }
+        }
+
+        internal void CopyToPC(string source, string destination, bool overwrite)
+        {
+            string[] str = source.Split('\\');
+
+            if (str.Length > 1)
+            {
+                if (ContentType.Type == WindowsPortableDeviceEnumerators.ContentType.Folder ||
+                    ContentType.Type == WindowsPortableDeviceEnumerators.ContentType.FunctionalObject)
+                {
+                            if (Name.Value == str[0])
+                            {
+                                foreach (Item item in DeviceItems)
+                                {
+                                    item.CopyToPC(source.Remove(0, str[0].Length + 1), destination, overwrite);
+                                }
+                            }
+                }
+            }
+            else if (str.Length == 1)
+            {
+                if (Name.Value == str[0])
+                {
+                    TransferFile(destination, overwrite);
+                }
+            }
+        }
+
+        private void TransferFile(string destination, bool overwrite)
+        {
+            IPortableDeviceResources resources;
+            DeviceContent.Transfer(out resources);
+
+            IStream wpdStream = null;
+            uint optimalTransferSize = 0;
+
+            var property = new _tagpropertykey
+            {
+                fmtid = new Guid("E81E79BE-34F0-41BF-B53F-F1A06AE87842"),
+                pid = 0
+            };
+
+            System.Runtime.InteropServices.ComTypes.IStream sourceStream = null;
+            try
+            {
+                resources.GetStream(Id, ref property, 0, ref optimalTransferSize, out wpdStream);
+                sourceStream = (System.Runtime.InteropServices.ComTypes.IStream)wpdStream;
+                FileMode mode;
+                if (overwrite)
+                {
+                    mode = FileMode.Create;
+                }
+                else
+                {
+                    mode = FileMode.CreateNew;
+                }
+                FileStream targetStream = new FileStream(
+                destination,
+                mode,
+                FileAccess.Write);
+
+                unsafe
+                {
+                    try
+                    {
+                        var buffer = new byte[1024];
+                        int bytesRead;
+                        do
+                        {
+                            sourceStream.Read(buffer, 1024, new IntPtr(&bytesRead));
+                            targetStream.Write(buffer, 0, 1024);
+                        } while (bytesRead > 0);
+                    }
+                    finally
+                    {
+                        targetStream.Close();
+                    }
+                }
+            }
+            catch (IOException)
+            {
+                throw new Exception("Destination file already exist!");
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(sourceStream);
+                Marshal.ReleaseComObject(wpdStream);
+            }
+        }
+
+
+        internal void FindParentObjectId(string destinationPath, ref string parentObjectId)
+        {
+            string[] str = destinationPath.Split('\\');
+            if (str.Length > 1)
+            {
+                if (ContentType.Type == WindowsPortableDeviceEnumerators.ContentType.Folder ||
+                    ContentType.Type == WindowsPortableDeviceEnumerators.ContentType.FunctionalObject)
+                {
+                    if (Name.Value == str[0])
+                    {
+                        foreach (Item item in DeviceItems)
+                        {
+                            item.FindParentObjectId(destinationPath.Remove(0, str[0].Length + 1), ref parentObjectId);
+                        }
+                    }
+                }
+            }
+            else if (str.Length == 1)
+            {
+                if (Name.Value == str[0])
+                {
+                    parentObjectId = Id;
+                }
             }
         }
     }

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using PortableDeviceApiLib;
 using WindowsPortableDeviceNet.Model;
+using System;
 
 namespace WindowsPortableDeviceNet
 {
@@ -33,5 +34,38 @@ namespace WindowsPortableDeviceNet
                 connectedPortableDevices.Add(new Device(deviceId)); 
             }            
         }
+
+
+        public void CopyToPC(string deviceName, string source, string destination, bool overwrite)
+        {
+            FindTargetDevice(deviceName);
+            _Device.Connect();
+            _Device.CopyToPC(source, destination, overwrite);
+        }
+
+        public void CopyToDevice(string device, string source, string destination, bool overwrite)
+        {
+            FindTargetDevice(device);
+            _Device.Connect();
+            _Device.CopyToDevice(source, destination, overwrite);
+        }
+
+        private void FindTargetDevice(string deviceName)
+        {
+            List<Device> devices = this.Get();
+            foreach (Device device in devices)
+            {
+                if (device.FriendlyName.Value == deviceName)
+                {
+                    _Device = device;
+                }
+            }
+            if (_Device == null)
+            {
+                throw new Exception("target device not connected!");
+            }
+        }
+
+        private Device _Device;
     }
 }
