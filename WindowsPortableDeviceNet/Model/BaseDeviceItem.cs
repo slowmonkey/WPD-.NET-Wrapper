@@ -1,17 +1,16 @@
-﻿using System.Collections.Generic;
-using PortableDeviceApiLib;
+﻿using PortableDeviceApiLib;
 
 namespace WindowsPortableDeviceNet.Model
 {
     public class BaseDeviceItem
     {
         public string Id { get; protected set; }
-        public List<Item> DeviceItems { get; private set; }
+        public ItemCollection DeviceItems { get; private set; }
 
         public BaseDeviceItem(string id)
         {
             Id = id;
-            DeviceItems = new List<Item>();
+            DeviceItems = new ItemCollection();
         }
 
         /// <summary>
