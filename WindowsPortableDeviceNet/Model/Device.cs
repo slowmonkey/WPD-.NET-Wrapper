@@ -89,14 +89,14 @@ namespace WindowsPortableDeviceNet.Model
         /// </summary>
         /// <param name="destinationPath"></param>
         /// <param name="isKeepFolderStructure"></param>
-        public Device TransferData(string destinationPath, bool isOverwrite, bool isKeepFolderStructure)
+        public Device TransferData(string destinationPath, bool isOverwrite)
         {
             try
             {
                 Connect();
                 foreach (Item item in DeviceItems)
                 {
-                    item.TransferFiles(destinationPath, isOverwrite, isKeepFolderStructure);
+                    item.TransferFiles(destinationPath, isOverwrite);
                 }
             }
             finally

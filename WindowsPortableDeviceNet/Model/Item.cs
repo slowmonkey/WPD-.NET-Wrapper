@@ -79,7 +79,7 @@ namespace WindowsPortableDeviceNet.Model
 
                 if (transferAllItems)
                 {
-                    item.TransferFiles(copyDataDetails.DestinationPath, copyDataDetails.IsOverwrite, copyDataDetails.IsKeepFolderStructure);
+                    item.TransferFiles(copyDataDetails.DestinationPath, copyDataDetails.IsOverwrite);
                 }
                 else
                 {
@@ -92,7 +92,7 @@ namespace WindowsPortableDeviceNet.Model
             }
         }
 
-        public void TransferFiles(string destinationPath, bool isOverwrite, bool isKeepFolderStructure)
+        public void TransferFiles(string destinationPath, bool isOverwrite)
         {
             if (!Directory.Exists(destinationPath))
             {
@@ -104,18 +104,15 @@ namespace WindowsPortableDeviceNet.Model
                 case WindowsPortableDeviceEnumerators.ContentType.Folder:
                 case WindowsPortableDeviceEnumerators.ContentType.FunctionalObject:
                 {
-                    if (isKeepFolderStructure)
+                    destinationPath = Path.Combine(destinationPath, Name.Value);
+                    if (!Directory.Exists(destinationPath))
                     {
-                        destinationPath = Path.Combine(destinationPath, Name.Value);
-                        if (!Directory.Exists(destinationPath))
-                        {
-                            Directory.CreateDirectory(destinationPath);
-                        }
+                        Directory.CreateDirectory(destinationPath);
                     }
 
                     foreach (Item item in DeviceItems)
                     {
-                        item.TransferFiles(destinationPath, isOverwrite, isKeepFolderStructure);
+                        item.TransferFiles(destinationPath, isOverwrite);
                     }
                 }
                 break;

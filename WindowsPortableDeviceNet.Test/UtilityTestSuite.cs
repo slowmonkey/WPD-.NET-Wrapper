@@ -35,7 +35,7 @@ namespace WindowsPortableDeviceNet.Test
             Utility utility = new Utility();
             List<Device> device = utility.GetConnectedPortableDevices();
             device[0].Connect();
-            device[0].TransferData("C:\\Users\\Gav\\Desktop\\test", isOverwrite: false, isKeepFolderStructure: false);
+            device[0].TransferData("C:\\Users\\Gav\\Desktop\\test", isOverwrite: false);
             device[0].Disconnect();
         }
 
@@ -51,7 +51,7 @@ namespace WindowsPortableDeviceNet.Test
             Utility utility = new Utility();
             List<Device> device = utility.GetConnectedPortableDevices();
             device[0].Connect();
-            device[0].TransferData("C:\\Users\\Gav\\Desktop\\test", isOverwrite: false, isKeepFolderStructure: true);
+            device[0].TransferData("C:\\Users\\Gav\\Desktop\\test", isOverwrite: false);
             device[0].Disconnect();
         }
     }
