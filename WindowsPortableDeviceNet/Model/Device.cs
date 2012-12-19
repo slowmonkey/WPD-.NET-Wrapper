@@ -3,6 +3,10 @@ using PortableDeviceTypesLib;
 using WindowsPortableDeviceNet.Model.Properties;
 using WindowsPortableDeviceNet.Model.Properties.Device;
 using IPortableDeviceValues = PortableDeviceApiLib.IPortableDeviceValues;
+using _tagpropertykey = PortableDeviceApiLib._tagpropertykey;
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace WindowsPortableDeviceNet.Model
 {
@@ -147,6 +151,119 @@ namespace WindowsPortableDeviceNet.Model
             IPortableDeviceContent content;
             portableDeviceItem.Content(out content);
             LoadDeviceItems(content);
+        }
+
+        internal void CopyToPC(string source, string destination, bool overwrite)
+        {
+            foreach (Item item in DeviceItems)
+            {
+                item.CopyToPC(source, destination, overwrite);
+            }
+        }
+
+        internal void CopyToDevice(string source, string destination, bool overwrite)
+        {
+            IPortableDeviceContent content;
+            ComDeviceObject.Content(out content);
+            string parentObjectId = null;
+            FindParentObjectId(Path.GetDirectoryName(destination), ref parentObjectId);
+            if (string.IsNullOrEmpty(parentObjectId))
+                throw new Exception("destination folder has not been found.");
+
+            IPortableDeviceValues values =
+                GetRequiredPropertiesForContentType(source, destination, parentObjectId);
+            PortableDeviceApiLib.IStream wpdStream = null;
+            uint optimalTransferSize = 0;
+            content.CreateObjectWithPropertiesAndData(
+                values,
+                out wpdStream,
+                ref optimalTransferSize,
+                null);
+            System.Runtime.InteropServices.ComTypes.IStream targetStream = null;
+            try
+            {
+                targetStream = (System.Runtime.InteropServices.ComTypes.IStream)wpdStream;
+                FileStream sourceStream = new FileStream(source, FileMode.Open, FileAccess.Read);
+                unsafe
+                {
+                    try
+                    {
+                        var buffer = new byte[optimalTransferSize];
+                        int bytesRead;
+                        do
+                        {
+                            bytesRead = sourceStream.Read(buffer, 0, (int)optimalTransferSize);
+                            IntPtr pcbWritten = IntPtr.Zero;
+                            if (bytesRead < (int)optimalTransferSize)
+                                targetStream.Write(buffer, bytesRead, pcbWritten);
+                            else
+                                targetStream.Write(buffer, (int)optimalTransferSize, pcbWritten);
+                        } while (bytesRead > 0);
+                        targetStream.Commit(0);
+                    }
+                    catch (ArgumentException e)
+                    {
+                        throw new Exception("Some argument has problem, remember this API can't overwrite" +
+                            "file on the device side! message: " + e.Message); 
+                    }
+                    finally
+                    {
+                        sourceStream.Close();
+                    }
+                }
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(wpdStream);
+                Marshal.ReleaseComObject(targetStream);
+            }
+        }
+
+
+        private void FindParentObjectId(string destinationPath, ref string parentObjectId)
+        {
+            foreach (Item item in DeviceItems)
+            {
+                item.FindParentObjectId(destinationPath, ref parentObjectId);
+            }
+        }
+
+        private IPortableDeviceValues GetRequiredPropertiesForContentType(string source,
+            string destination, string parentObjectId)
+        {
+            IPortableDeviceValues values =
+                new PortableDeviceTypesLib.PortableDeviceValues() as IPortableDeviceValues;
+
+            var WPD_OBJECT_PARENT_ID = new _tagpropertykey();
+            WPD_OBJECT_PARENT_ID.fmtid =
+                new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC,
+                         0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
+            WPD_OBJECT_PARENT_ID.pid = 3;
+            values.SetStringValue(ref WPD_OBJECT_PARENT_ID, parentObjectId);
+
+            FileInfo fileInfo = new FileInfo(source);
+            var WPD_OBJECT_SIZE = new _tagpropertykey();
+            WPD_OBJECT_SIZE.fmtid =
+                new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC,
+                         0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
+            WPD_OBJECT_SIZE.pid = 11;
+            values.SetUnsignedLargeIntegerValue(WPD_OBJECT_SIZE, (ulong)fileInfo.Length);
+
+            var WPD_OBJECT_ORIGINAL_FILE_NAME = new _tagpropertykey();
+            WPD_OBJECT_ORIGINAL_FILE_NAME.fmtid =
+                new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC,
+                         0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
+            WPD_OBJECT_ORIGINAL_FILE_NAME.pid = 12;
+            values.SetStringValue(WPD_OBJECT_ORIGINAL_FILE_NAME, Path.GetFileName(destination));
+
+            var WPD_OBJECT_NAME = new _tagpropertykey();
+            WPD_OBJECT_NAME.fmtid =
+                new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC,
+                         0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
+            WPD_OBJECT_NAME.pid = 4;
+            values.SetStringValue(WPD_OBJECT_NAME, Path.GetFileName(destination));
+
+            return values;
         }
     }
 }
