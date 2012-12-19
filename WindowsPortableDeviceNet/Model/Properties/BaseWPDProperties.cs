@@ -15,6 +15,19 @@ namespace WindowsPortableDeviceNet.Model.Properties
             DeviceProperties = deviceProperties;
         }
 
+        public BaseWPDProperties()
+        {
+            DeviceProperties = null;
+        }
+
+        public void AddTo(IPortableDeviceValues values, string parentObjectId)
+        {
+            if (values == null) throw new ArgumentNullException("values");
+
+            _tagpropertykey wpdObjectParentIdProperty = ToTagPropertyKey();
+            values.SetStringValue(ref wpdObjectParentIdProperty, parentObjectId);
+        }
+
         public string GetStringPropertyValue(Guid formatId, uint positionId)
         {
             _tagpropertykey property = CreateProperty(formatId, positionId);
@@ -40,6 +53,11 @@ namespace WindowsPortableDeviceNet.Model.Properties
             uint propertyValue;
             DeviceProperties.GetUnsignedIntegerValue(ref property, out propertyValue);
             return propertyValue;
+        }
+
+        public _tagpropertykey ToTagPropertyKey()
+        {
+            return CreateProperty(FormatId, PositionId);
         }
 
         public static _tagpropertykey CreateProperty(Guid formatId, uint positionId)
