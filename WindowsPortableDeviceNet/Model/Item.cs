@@ -8,9 +8,9 @@ namespace WindowsPortableDeviceNet.Model
 {
     public class Item : BaseDeviceItem
     {
-        public ContentTypeProperty ContentType { get; set; }
-        public NameProperty Name { get; set; }
-        public OriginalFileNameProperty OriginalFileName { get; set; }
+        public ContentTypeProperty ContentType { get; private set; }
+        public NameProperty Name { get; private set; }
+        public OriginalFileNameProperty OriginalFileName { get; private set; }
 
         private IPortableDeviceContent DeviceContent { get; set; }
 
@@ -48,7 +48,7 @@ namespace WindowsPortableDeviceNet.Model
                     break;
                 }
 
-                case WindowsPortableDeviceEnumerators.ContentType.Image:
+                default:
                 {
                     OriginalFileName = new OriginalFileNameProperty(values);
                     break;
@@ -56,8 +56,49 @@ namespace WindowsPortableDeviceNet.Model
             }
         }
 
-        public void TransferFiles(string destinationPath, bool isKeepFolderStructure)
+        public void TransferFiles(CopyDataDetails copyDataDetails)
         {
+            if (String.IsNullOrEmpty(copyDataDetails.SourcePath))
+                throw new ApplicationException("TransferFiles(): No source path is specified");
+
+            string[] sourcePathItems = copyDataDetails.SourcePath.Split('\\');
+
+            // If there is only one source path item left it means it is either the file to be transfered or the files
+            // within that folder are to be transferred.
+
+            bool transferAllItems = false;
+            if (sourcePathItems.Length == 1) transferAllItems = true;
+
+            // Find the device item to transfer.
+
+            foreach (Item item in DeviceItems)
+            {
+                // If the current source path name does not match the device item then go to the next item.
+
+                if (item.Name.ToString() != sourcePathItems[0]) continue;
+
+                if (transferAllItems)
+                {
+                    item.TransferFiles(copyDataDetails.DestinationPath, copyDataDetails.IsOverwrite, copyDataDetails.IsKeepFolderStructure);
+                }
+                else
+                {
+                    // Remove the first source path item from the source string.
+
+                    copyDataDetails.SourcePath = copyDataDetails.SourcePath.Remove(0, sourcePathItems[0].Length + 1);
+                    item.TransferFiles(copyDataDetails);
+                }
+                return;
+            }
+        }
+
+        public void TransferFiles(string destinationPath, bool isOverwrite, bool isKeepFolderStructure)
+        {
+            if (!Directory.Exists(destinationPath))
+            {
+                throw new ApplicationException("TransferFiles() - destinationPath does not exist: " + destinationPath);
+            }
+
             switch (ContentType.Type)
             {
                 case WindowsPortableDeviceEnumerators.ContentType.Folder:
@@ -74,14 +115,14 @@ namespace WindowsPortableDeviceNet.Model
 
                     foreach (Item item in DeviceItems)
                     {
-                        item.TransferFiles(destinationPath, isKeepFolderStructure);
+                        item.TransferFiles(destinationPath, isOverwrite, isKeepFolderStructure);
                     }
                 }
                 break;
 
-                case WindowsPortableDeviceEnumerators.ContentType.Image:
+                default:
                 {
-                    TransferFile(destinationPath);
+                    TransferFile(destinationPath, isOverwrite);
                 }
                 break;
             }
@@ -91,31 +132,28 @@ namespace WindowsPortableDeviceNet.Model
         /// This method copies the file from the device to the destination path.
         /// </summary>
         /// <param name="destinationPath"></param>
-        private void TransferFile(string destinationPath)
+        private void TransferFile(string destinationPath, bool isOverwrite)
         {
-            // TODO: Clean this up.
-
             IPortableDeviceResources resources;
             DeviceContent.Transfer(out resources);
 
             IStream wpdStream = null;
             uint optimalTransferSize = 0;
 
-            var property = new _tagpropertykey
-                               {
-                                   fmtid = new Guid("E81E79BE-34F0-41BF-B53F-F1A06AE87842"),
-                                   pid = 0
-                               };
+            _tagpropertykey property = new ResourceDefaultProperty().ToTagPropertyKey();
 
             System.Runtime.InteropServices.ComTypes.IStream sourceStream = null;
+
             try
             {
                 resources.GetStream(Id, ref property, 0, ref optimalTransferSize, out wpdStream);
                 sourceStream = (System.Runtime.InteropServices.ComTypes.IStream)wpdStream;
 
+                FileMode fileMode = FileMode.Create;
+                if (isOverwrite) fileMode = FileMode.CreateNew;
                 FileStream targetStream = new FileStream(
                     Path.Combine(destinationPath, OriginalFileName.Value),
-                    FileMode.Create,
+                    fileMode,
                     FileAccess.Write);
 
                 unsafe
@@ -136,91 +174,6 @@ namespace WindowsPortableDeviceNet.Model
                     }
                 }
             }
-            finally
-            {
-                Marshal.ReleaseComObject(sourceStream);
-                Marshal.ReleaseComObject(wpdStream);
-            }
-        }
-
-        internal void CopyToPC(string source, string destination, bool overwrite)
-        {
-            string[] str = source.Split('\\');
-
-            if (str.Length > 1)
-            {
-                if (ContentType.Type == WindowsPortableDeviceEnumerators.ContentType.Folder ||
-                    ContentType.Type == WindowsPortableDeviceEnumerators.ContentType.FunctionalObject)
-                {
-                            if (Name.Value == str[0])
-                            {
-                                foreach (Item item in DeviceItems)
-                                {
-                                    item.CopyToPC(source.Remove(0, str[0].Length + 1), destination, overwrite);
-                                }
-                            }
-                }
-            }
-            else if (str.Length == 1)
-            {
-                if (Name.Value == str[0])
-                {
-                    TransferFile(destination, overwrite);
-                }
-            }
-        }
-
-        private void TransferFile(string destination, bool overwrite)
-        {
-            IPortableDeviceResources resources;
-            DeviceContent.Transfer(out resources);
-
-            IStream wpdStream = null;
-            uint optimalTransferSize = 0;
-
-            var property = new _tagpropertykey
-            {
-                fmtid = new Guid("E81E79BE-34F0-41BF-B53F-F1A06AE87842"),
-                pid = 0
-            };
-
-            System.Runtime.InteropServices.ComTypes.IStream sourceStream = null;
-            try
-            {
-                resources.GetStream(Id, ref property, 0, ref optimalTransferSize, out wpdStream);
-                sourceStream = (System.Runtime.InteropServices.ComTypes.IStream)wpdStream;
-                FileMode mode;
-                if (overwrite)
-                {
-                    mode = FileMode.Create;
-                }
-                else
-                {
-                    mode = FileMode.CreateNew;
-                }
-                FileStream targetStream = new FileStream(
-                destination,
-                mode,
-                FileAccess.Write);
-
-                unsafe
-                {
-                    try
-                    {
-                        var buffer = new byte[1024];
-                        int bytesRead;
-                        do
-                        {
-                            sourceStream.Read(buffer, 1024, new IntPtr(&bytesRead));
-                            targetStream.Write(buffer, 0, 1024);
-                        } while (bytesRead > 0);
-                    }
-                    finally
-                    {
-                        targetStream.Close();
-                    }
-                }
-            }
             catch (IOException)
             {
                 throw new Exception("Destination file already exist!");
@@ -232,31 +185,57 @@ namespace WindowsPortableDeviceNet.Model
             }
         }
 
-
-        internal void FindParentObjectId(string destinationPath, ref string parentObjectId)
+        // TODO: Should be transfer file.
+        internal void CopyFromDevice(string source, string destination, bool isOverwrite)
         {
-            string[] str = destinationPath.Split('\\');
-            if (str.Length > 1)
+            // Split the source so that it is folder/folder/file. There might be x number of folders.
+            // Split the source into directories and file names and traverse through all the folders until the file is reached.
+
+            string[] sourcePathItems = source.Split('\\');
+
+            if (sourcePathItems.Length == 0) return;
+
+            if (sourcePathItems.Length > 1)
             {
-                if (ContentType.Type == WindowsPortableDeviceEnumerators.ContentType.Folder ||
-                    ContentType.Type == WindowsPortableDeviceEnumerators.ContentType.FunctionalObject)
+                // If the current item is folder and it matches the name of this time copy 
+                // all the files from the folder to the destination location.
+
+                if ((ContentType.IsFolder()) && (Name.Value == sourcePathItems[0]))
                 {
-                    if (Name.Value == str[0])
+                    // TODO: Change to use device items copy from device.
+
+                    foreach (Item item in DeviceItems)
                     {
-                        foreach (Item item in DeviceItems)
-                        {
-                            item.FindParentObjectId(destinationPath.Remove(0, str[0].Length + 1), ref parentObjectId);
-                        }
+                        item.CopyFromDevice(source.Remove(0, sourcePathItems[0].Length + 1), destination, isOverwrite);
                     }
                 }
             }
-            else if (str.Length == 1)
+            else if (sourcePathItems.Length == 1)
             {
-                if (Name.Value == str[0])
+                if (Name.Value == sourcePathItems[0])
                 {
-                    parentObjectId = Id;
+                    TransferFile(destination, isOverwrite);
                 }
             }
+        }
+
+        public string FindParentObjectId(string destinationPath)
+        {
+            string[] destinationPathItems = destinationPath.Split('\\');
+
+            // If the destination path's first value does not match the current 
+            // item name it has gone down the wrong path to search for the items.
+
+            if (Name.Value != destinationPathItems[0]) return String.Empty;
+
+            if (destinationPathItems.Length == 1) return Id;
+
+            if ((destinationPathItems.Length > 1) && (ContentType.IsFolder()))
+            {
+                return DeviceItems.FindParentObjectId(destinationPath.Remove(0, destinationPathItems[0].Length + 1));                    
+            }
+
+            return String.Empty;
         }
     }
 }
