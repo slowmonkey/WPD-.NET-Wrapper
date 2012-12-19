@@ -42,9 +42,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CopyDataDetails.cs" />
     <Compile Include="Model\BaseDeviceItem.cs" />
     <Compile Include="Model\Device.cs" />
+    <Compile Include="Model\DeviceCollection.cs" />
     <Compile Include="Model\Item.cs" />
+    <Compile Include="Model\ItemCollection.cs" />
+    <Compile Include="Model\Properties\ResourceDefaultProperty.cs" />
+    <Compile Include="Model\Properties\SizeProperty.cs" />
     <Compile Include="Model\Properties\BaseWPDProperties.cs" />
     <Compile Include="Model\Properties\ContentTypeProperty.cs" />
     <Compile Include="Model\Properties\OriginalFileNameProperty.cs" />
@@ -55,6 +60,8 @@
     <Compile Include="Model\Properties\NameProperty.cs" />
     <Compile Include="Model\Properties\Device\FriendlyNameProperty.cs" />
     <Compile Include="Model\Properties\Device\SerialNumberProperty.cs" />
+    <Compile Include="Model\Properties\PortableDeviceConstants.cs" />
+    <Compile Include="Model\Properties\WpdObjectParentIdProperty.cs" />
     <Compile Include="Model\WindowsPortableDeviceEnumerators.cs" />
     <Compile Include="Utility.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
