@@ -1,12 +1,10 @@
-﻿using PortableDeviceApiLib;
+﻿using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using PortableDeviceApiLib;
 using PortableDeviceTypesLib;
 using WindowsPortableDeviceNet.Model.Properties;
 using WindowsPortableDeviceNet.Model.Properties.Device;
-using IPortableDeviceValues = PortableDeviceApiLib.IPortableDeviceValues;
-using _tagpropertykey = PortableDeviceApiLib._tagpropertykey;
-using System;
-using System.IO;
-using System.Runtime.InteropServices;
 
 namespace WindowsPortableDeviceNet.Model
 {
@@ -14,8 +12,8 @@ namespace WindowsPortableDeviceNet.Model
     {
         public string DeviceId { get; set; }
 
-        public ContentTypeProperty ContentType { get; set; }
-        public TypeProperty DeviceType { get; set; }
+        public ContentTypeProperty ContentType { get; private set; }
+        public TypeProperty DeviceType { get; private set; }
         public FirmwareVersionProperty FirmwareVersion { get; private set; }
         public FriendlyNameProperty FriendlyName { get; private set; }
         public ManufacturerProperty Manufacturer { get; private set; }
@@ -24,7 +22,7 @@ namespace WindowsPortableDeviceNet.Model
         public SerialNumberProperty SerialNumber { get; private set; }
 
         // COM related objects.
-        
+
         private PortableDeviceClass ComDeviceObject { get; set; }
         public bool IsConnected { get; private set; }
 
@@ -39,12 +37,13 @@ namespace WindowsPortableDeviceNet.Model
         /// The initial id for all windows portable devices is hard coded to "DEVICE"
         /// </summary>
         /// <param name="deviceId"></param>
-        public Device(string deviceId) : base("DEVICE")
+        public Device(string deviceId)
+            : base("DEVICE")
         {
             DeviceId = deviceId;
             ComDeviceObject = new PortableDeviceClass();
             Connect();
-            IPortableDeviceValues deviceProperties = ExtractDeviceProperties(ComDeviceObject);
+            PortableDeviceApiLib.IPortableDeviceValues deviceProperties = ExtractDeviceProperties(ComDeviceObject);
 
             ContentType = new ContentTypeProperty(deviceProperties);
             DeviceType = new TypeProperty(deviceProperties);
@@ -59,27 +58,30 @@ namespace WindowsPortableDeviceNet.Model
 
             Disconnect();
         }
-        
+
         /// <summary>
         /// This method opens a connection to the device.
         /// </summary>
-        public void Connect()
+        public Device Connect()
         {
-            if (IsConnected) { return; }
+            if (IsConnected) { return this; }
 
-            var clientInfo = (IPortableDeviceValues)new PortableDeviceValuesClass();
+            var clientInfo = (PortableDeviceApiLib.IPortableDeviceValues)new PortableDeviceValuesClass();
             ComDeviceObject.Open(DeviceId, clientInfo);
             IsConnected = true;
+
+            return this;
         }
-        
+
         /// <summary>
         /// This method closes the connection to the device.
         /// </summary>
-        public void Disconnect()
+        public Device Disconnect()
         {
-            if (!IsConnected) { return; }
+            if (!IsConnected) { return this; }
             ComDeviceObject.Close();
             IsConnected = false;
+            return this;
         }
 
         /// <summary>
@@ -87,23 +89,25 @@ namespace WindowsPortableDeviceNet.Model
         /// </summary>
         /// <param name="destinationPath"></param>
         /// <param name="isKeepFolderStructure"></param>
-        public void TransferData(string destinationPath, bool isKeepFolderStructure)
+        public Device TransferData(string destinationPath, bool isOverwrite, bool isKeepFolderStructure)
         {
             try
             {
                 Connect();
                 foreach (Item item in DeviceItems)
                 {
-                    item.TransferFiles(destinationPath, isKeepFolderStructure);
+                    item.TransferFiles(destinationPath, isOverwrite, isKeepFolderStructure);
                 }
             }
             finally
             {
                 Disconnect();
             }
+
+            return this;
         }
 
-        public void Refresh(string deviceId)
+        public Device Refresh(string deviceId)
         {
             DeviceId = deviceId;
             DeviceItems.Clear();
@@ -117,6 +121,7 @@ namespace WindowsPortableDeviceNet.Model
             {
                 Disconnect();
             }
+            return this;
         }
 
         /// <summary>
@@ -124,7 +129,7 @@ namespace WindowsPortableDeviceNet.Model
         /// </summary>
         /// <param name="portableDeviceItem"></param>
         /// <returns></returns>
-        private IPortableDeviceValues ExtractDeviceProperties(PortableDeviceClass portableDeviceItem)
+        private PortableDeviceApiLib.IPortableDeviceValues ExtractDeviceProperties(PortableDeviceClass portableDeviceItem)
         {
             IPortableDeviceContent content;
             IPortableDeviceProperties properties;
@@ -133,7 +138,7 @@ namespace WindowsPortableDeviceNet.Model
 
             // Retrieve the values for the properties
 
-            IPortableDeviceValues propertyValues;
+            PortableDeviceApiLib.IPortableDeviceValues propertyValues;
             properties.GetValues(Id, null, out propertyValues);
 
             return propertyValues;
@@ -153,37 +158,41 @@ namespace WindowsPortableDeviceNet.Model
             LoadDeviceItems(content);
         }
 
-        internal void CopyToPC(string source, string destination, bool overwrite)
+        public Device CopyFromDevice(CopyDataDetails copyDataDetails)
         {
-            foreach (Item item in DeviceItems)
-            {
-                item.CopyToPC(source, destination, overwrite);
-            }
+            DeviceItems.CopyFromDevice(copyDataDetails);
+            return this;
         }
 
-        internal void CopyToDevice(string source, string destination, bool overwrite)
+        public Device CopyToDevice(CopyDataDetails copyDataDetails)
         {
+            // TODO: Clean this up.
+
+            // Get destination path's id (the parent object id for all the source files.)
+
+            string parentObjectId = DeviceItems.FindParentObjectId(Path.GetDirectoryName(copyDataDetails.DestinationPath));
+            ValidateParentObjectIdOfDestinationPath(copyDataDetails, parentObjectId);
+
+            // Set up the portable device values for a generic file.
+
+            PortableDeviceApiLib.IPortableDeviceValues values =
+                GetRequiredPropertiesForContentType(copyDataDetails.SourcePath, copyDataDetails.DestinationPath, parentObjectId);
+            PortableDeviceApiLib.IStream wpdStream = null;
+
+            uint optimalTransferSize = 0;
             IPortableDeviceContent content;
             ComDeviceObject.Content(out content);
-            string parentObjectId = null;
-            FindParentObjectId(Path.GetDirectoryName(destination), ref parentObjectId);
-            if (string.IsNullOrEmpty(parentObjectId))
-                throw new Exception("destination folder has not been found.");
-
-            IPortableDeviceValues values =
-                GetRequiredPropertiesForContentType(source, destination, parentObjectId);
-            PortableDeviceApiLib.IStream wpdStream = null;
-            uint optimalTransferSize = 0;
             content.CreateObjectWithPropertiesAndData(
                 values,
                 out wpdStream,
                 ref optimalTransferSize,
                 null);
+
             System.Runtime.InteropServices.ComTypes.IStream targetStream = null;
             try
             {
                 targetStream = (System.Runtime.InteropServices.ComTypes.IStream)wpdStream;
-                FileStream sourceStream = new FileStream(source, FileMode.Open, FileAccess.Read);
+                FileStream sourceStream = new FileStream(copyDataDetails.SourcePath, FileMode.Open, FileAccess.Read);
                 unsafe
                 {
                     try
@@ -195,16 +204,20 @@ namespace WindowsPortableDeviceNet.Model
                             bytesRead = sourceStream.Read(buffer, 0, (int)optimalTransferSize);
                             IntPtr pcbWritten = IntPtr.Zero;
                             if (bytesRead < (int)optimalTransferSize)
+                            {
                                 targetStream.Write(buffer, bytesRead, pcbWritten);
+                            }
                             else
+                            {
                                 targetStream.Write(buffer, (int)optimalTransferSize, pcbWritten);
+                            }
                         } while (bytesRead > 0);
                         targetStream.Commit(0);
                     }
                     catch (ArgumentException e)
                     {
                         throw new Exception("Some argument has problem, remember this API can't overwrite" +
-                            "file on the device side! message: " + e.Message); 
+                            "file on the device side! message: " + e.Message);
                     }
                     finally
                     {
@@ -217,51 +230,39 @@ namespace WindowsPortableDeviceNet.Model
                 Marshal.ReleaseComObject(wpdStream);
                 Marshal.ReleaseComObject(targetStream);
             }
+
+            return this;
         }
 
-
-        private void FindParentObjectId(string destinationPath, ref string parentObjectId)
+        private static void ValidateParentObjectIdOfDestinationPath(CopyDataDetails copyDataDetails, string parentObjectId)
         {
-            foreach (Item item in DeviceItems)
-            {
-                item.FindParentObjectId(destinationPath, ref parentObjectId);
-            }
+            if (!String.IsNullOrEmpty(parentObjectId)) return;
+            
+            string errorMessage = String.Format("Destination folder: {0} - cannot be found.", copyDataDetails.DestinationPath);
+            throw new Exception(errorMessage);
+            
         }
 
-        private IPortableDeviceValues GetRequiredPropertiesForContentType(string source,
-            string destination, string parentObjectId)
+        private PortableDeviceApiLib.IPortableDeviceValues GetRequiredPropertiesForContentType(
+            string source,
+            string destination,
+            string parentObjectId)
         {
-            IPortableDeviceValues values =
-                new PortableDeviceTypesLib.PortableDeviceValues() as IPortableDeviceValues;
+            PortableDeviceApiLib.IPortableDeviceValues values =
+                new PortableDeviceTypesLib.PortableDeviceValues() as PortableDeviceApiLib.IPortableDeviceValues;
 
-            var WPD_OBJECT_PARENT_ID = new _tagpropertykey();
-            WPD_OBJECT_PARENT_ID.fmtid =
-                new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC,
-                         0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
-            WPD_OBJECT_PARENT_ID.pid = 3;
-            values.SetStringValue(ref WPD_OBJECT_PARENT_ID, parentObjectId);
+            PortableDeviceApiLib._tagpropertykey wpdObjectParentId = new WpdObjectParentIdProperty().ToTagPropertyKey();
+            values.SetStringValue(ref wpdObjectParentId, parentObjectId);
 
             FileInfo fileInfo = new FileInfo(source);
-            var WPD_OBJECT_SIZE = new _tagpropertykey();
-            WPD_OBJECT_SIZE.fmtid =
-                new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC,
-                         0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
-            WPD_OBJECT_SIZE.pid = 11;
-            values.SetUnsignedLargeIntegerValue(WPD_OBJECT_SIZE, (ulong)fileInfo.Length);
+            PortableDeviceApiLib._tagpropertykey wpdObjectSize = new SizeProperty().ToTagPropertyKey();
+            values.SetUnsignedLargeIntegerValue(wpdObjectSize, (ulong)fileInfo.Length);
 
-            var WPD_OBJECT_ORIGINAL_FILE_NAME = new _tagpropertykey();
-            WPD_OBJECT_ORIGINAL_FILE_NAME.fmtid =
-                new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC,
-                         0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
-            WPD_OBJECT_ORIGINAL_FILE_NAME.pid = 12;
-            values.SetStringValue(WPD_OBJECT_ORIGINAL_FILE_NAME, Path.GetFileName(destination));
+            PortableDeviceApiLib._tagpropertykey wpdObjectOriginalFileName = new OriginalFileNameProperty().ToTagPropertyKey();
+            values.SetStringValue(wpdObjectOriginalFileName, Path.GetFileName(destination));
 
-            var WPD_OBJECT_NAME = new _tagpropertykey();
-            WPD_OBJECT_NAME.fmtid =
-                new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC,
-                         0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
-            WPD_OBJECT_NAME.pid = 4;
-            values.SetStringValue(WPD_OBJECT_NAME, Path.GetFileName(destination));
+            PortableDeviceApiLib._tagpropertykey wpdObjectName = new NameProperty().ToTagPropertyKey();
+            values.SetStringValue(wpdObjectName, Path.GetFileName(destination));
 
             return values;
         }
