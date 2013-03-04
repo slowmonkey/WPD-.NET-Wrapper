@@ -32,25 +32,36 @@ namespace WindowsPortableDeviceNet.Model
             }
         }
 
-        public string FindParentObjectId(string destinationPath)
+        /// <summary>
+        /// This method finds the parent object for the destination path.
+        /// </summary>
+        /// <param name="destinationPath"></param>
+        /// <returns></returns>
+        public Item FindParentObject(string destinationPath)
         {
+            // Split the destination path into directories etc...
+
             string[] destinationPathItems = destinationPath.Split('\\');
             Item item = FindItemByName(destinationPathItems[0]);
 
+            // If the destination path is only one level deep return the item.
+
             if (destinationPathItems.Length == 1)
             {
-                if (item != null) return item.Id;
-                return String.Empty;
+                if (item != null) return item;
+                return null;
             }
+
+            // If the destination path has multiple levels check the drill down the directory path structure.
 
             if ((destinationPathItems.Length > 1) && item.ContentType.IsFolder())
             {
-                if (item == null) return String.Empty;
+                if (item == null) return null;
                     
-                return item.FindParentObjectId(destinationPath.Remove(0, destinationPathItems[0].Length + 1));                    
+                return item.FindParentObject(destinationPath.Remove(0, destinationPathItems[0].Length + 1));                    
             }
 
-            return String.Empty;
+            return null;
         }
 
         private Item FindItemByName(string name)

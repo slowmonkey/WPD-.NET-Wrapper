@@ -14,7 +14,6 @@ namespace WindowsPortableDeviceNet
 
         public void CopyToPC(string deviceName, string source, string destination, bool overwrite)
         {
-            //if (copyDataDetails == null) throw new ArgumentNullException("copyDataDetails");
             CopyDataDetails copyDataDetails =
                 new CopyDataDetails
                 {
@@ -33,15 +32,14 @@ namespace WindowsPortableDeviceNet
                 .CopyFromDevice(copyDataDetails);
         }
 
-        public void CopyToDevice(string deviceName, string source, string destination, bool overwrite)
+        public void CopyFileToDevice(string deviceName, string sourceFilePath, string destinationDirectoryPath, bool overwrite)
         {
-            //if (copyDataDetails == null) throw new ArgumentNullException("copyDataDetails");
             CopyDataDetails copyDataDetails = 
                 new CopyDataDetails
                     {
                         DeviceName = deviceName,
-                        SourcePath = source,
-                        DestinationPath = destination,
+                        SourcePath = sourceFilePath,
+                        DestinationPath = destinationDirectoryPath,
                         IsOverwrite = overwrite
                     };
 

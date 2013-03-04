@@ -54,5 +54,14 @@ namespace WindowsPortableDeviceNet.Test
             device[0].TransferData("C:\\Users\\Gav\\Desktop\\test", isOverwrite: false);
             device[0].Disconnect();
         }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        public void CopyToDevice_JustOneFile_FileCopied()
+        {
+            const string deviceName = "Canon EOS 400D DIGITAL";
+            Utility utility = new Utility();
+            utility.CopyFileToDevice(deviceName, "C:\\Temp\\test.jpg", "CF\\DCIM", true);
+        }
     }
 }

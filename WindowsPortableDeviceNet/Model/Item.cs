@@ -67,7 +67,8 @@ namespace WindowsPortableDeviceNet.Model
             // within that folder are to be transferred.
 
             bool transferAllItems = false;
-            if (sourcePathItems.Length == 1) transferAllItems = true;
+            if (sourcePathItems.Length == 1)
+                transferAllItems = true;
 
             // Find the device item to transfer.
 
@@ -75,7 +76,8 @@ namespace WindowsPortableDeviceNet.Model
             {
                 // If the current source path name does not match the device item then go to the next item.
 
-                if (item.Name.ToString() != sourcePathItems[0]) continue;
+                if (item.Name.ToString() != sourcePathItems[0])
+                    continue;
 
                 if (transferAllItems)
                 {
@@ -94,11 +96,6 @@ namespace WindowsPortableDeviceNet.Model
 
         public void TransferFiles(string destinationPath, bool isOverwrite)
         {
-            if (!Directory.Exists(destinationPath))
-            {
-                throw new ApplicationException("TransferFiles() - destinationPath does not exist: " + destinationPath);
-            }
-
             switch (ContentType.Type)
             {
                 case WindowsPortableDeviceEnumerators.ContentType.Folder:
@@ -147,7 +144,8 @@ namespace WindowsPortableDeviceNet.Model
                 sourceStream = (System.Runtime.InteropServices.ComTypes.IStream)wpdStream;
 
                 FileMode fileMode = FileMode.Create;
-                if (isOverwrite) fileMode = FileMode.CreateNew;
+                if (isOverwrite)
+                    fileMode = FileMode.CreateNew;
                 FileStream targetStream = new FileStream(
                     Path.Combine(destinationPath, OriginalFileName.Value),
                     fileMode,
@@ -190,7 +188,8 @@ namespace WindowsPortableDeviceNet.Model
 
             string[] sourcePathItems = source.Split('\\');
 
-            if (sourcePathItems.Length == 0) return;
+            if (sourcePathItems.Length == 0)
+                return;
 
             if (sourcePathItems.Length > 1)
             {
@@ -216,23 +215,25 @@ namespace WindowsPortableDeviceNet.Model
             }
         }
 
-        public string FindParentObjectId(string destinationPath)
+        public Item FindParentObject(string destinationPath)
         {
             string[] destinationPathItems = destinationPath.Split('\\');
 
             // If the destination path's first value does not match the current 
             // item name it has gone down the wrong path to search for the items.
 
-            if (Name.Value != destinationPathItems[0]) return String.Empty;
+            //if (Name.Value != destinationPathItems[0]) return null;
 
-            if (destinationPathItems.Length == 1) return Id;
+            if (destinationPathItems.Length == 0)
+                return this;
 
-            if ((destinationPathItems.Length > 1) && (ContentType.IsFolder()))
+            if ((destinationPathItems.Length > 0) && (ContentType.IsFolder()))
             {
-                return DeviceItems.FindParentObjectId(destinationPath.Remove(0, destinationPathItems[0].Length + 1));                    
+                //return DeviceItems.FindParentObject(destinationPath.Remove(0, destinationPathItems[0].Length + 1));
+                return DeviceItems.FindParentObject(destinationPath);
             }
 
-            return String.Empty;
+            return null;
         }
     }
 }

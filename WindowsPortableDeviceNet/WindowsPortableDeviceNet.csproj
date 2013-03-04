@@ -46,6 +46,7 @@
     <Compile Include="Model\BaseDeviceItem.cs" />
     <Compile Include="Model\Device.cs" />
     <Compile Include="Model\DeviceCollection.cs" />
+    <Compile Include="Model\DeviceTargetStream.cs" />
     <Compile Include="Model\Item.cs" />
     <Compile Include="Model\ItemCollection.cs" />
     <Compile Include="Model\Properties\ResourceDefaultProperty.cs" />

@@ -11,7 +11,6 @@ namespace WindowsPortableDeviceNet.Model.Properties
         {
             FormatId = new Guid("EF6B490D-5CD8-437A-AFFC-DA8B60EE4A3C");
             PositionId = 12;
-            Value = GetStringPropertyValue(FormatId, PositionId);
         }
 
         public OriginalFileNameProperty(IPortableDeviceValues deviceProperties)
