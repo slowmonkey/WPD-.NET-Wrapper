@@ -30,7 +30,7 @@ namespace WindowsPortableDeviceNet.Model
         public bool IsConnected { get; private set; }
 
         /// <summary>
-        /// Construct the device by obtainin the device properties and the sub data.
+        /// Construct the device by obtaining the device properties and the sub data.
         /// 
         /// NOTE: 
         /// There is a difference with the device id and the id.

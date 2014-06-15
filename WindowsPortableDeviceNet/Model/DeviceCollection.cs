@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using PortableDeviceApiLib;
 
 namespace WindowsPortableDeviceNet.Model
@@ -27,17 +28,17 @@ namespace WindowsPortableDeviceNet.Model
             ExtractDeviceInformation(deviceIds);
         }
 
-        public Device GetDevice(string deviceName)
+        public void Reload()
         {
-            foreach (Device device in this)
-            {
-                if (device.FriendlyName.Value == deviceName) return device;
-            }
-
-            return null;
+            
         }
 
-        private void ExtractDeviceInformation(string[] deviceIds)
+        public Device GetDevice(string deviceName)
+        {
+            return this.FirstOrDefault(device => device.FriendlyName.Value == deviceName);
+        }
+
+        private void ExtractDeviceInformation(IEnumerable<string> deviceIds)
         {
             foreach (string deviceId in deviceIds)
             {
