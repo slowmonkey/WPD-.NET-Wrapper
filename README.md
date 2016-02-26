@@ -3,6 +3,14 @@ WPD-.NET-Wrapper
 
 Windows Portable Device .Net Wrapper
 
+## Current State
+
+Hi, to all the users that wish to use this library please feel free.
+Unfortunately it has been a while since I've looked at this and I can't really remember how it all works.
+I might get back to it someday but for now I'm not really keeping it up to date.
+
+## Copyright
+
 Copyright (c) 2013 Gavin Chin (slowmonkey - https://github.com/slowmonkey)
 
 Permission is hereby granted, free of charge, to any person obtaining
